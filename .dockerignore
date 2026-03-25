@@ -1,0 +1,49 @@
+# Git
+.git
+.gitmodules
+.gitignore
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Node
+node_modules
+npm-debug.log
+yarn-error.log
+
+# Logs
+*.log
+
+# OS / Editor
+.DS_Store
+Thumbs.db
+.codex
+.vscode
+.idea
+
+# Build artifacts
+dist
+build
+
+# Temp files
+tmp
+temp
+
+# Docker
+docker-compose.yml
+docker-compose.override.yml
+
+# Scripts (if not needed in container)
+scripts/
+
+# Submodules unnecessary files
+dostra-web/node_modules
+dostra-web/dist
+dostra-api/vendor
+dostra-api/storage/logs
+
+# Tests (optional)
+tests/
+coverage/
