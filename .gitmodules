@@ -1,0 +1,6 @@
+[submodule "dostra-web"]
+	path = dostra-web
+	url = https://github.com/chetannagar/dostra-web.git
+[submodule "dostra-api"]
+	path = dostra-api
+	url = https://github.com/chetannagar/dostra-api.git
