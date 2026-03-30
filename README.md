@@ -174,9 +174,9 @@ WordPress Form  ──▶  Zapier  ──▶  Laravel API  ──▶  Database  
 
 This repo owns:
 
-- **Service orchestration** via Docker Compose
+- **Service orchestration** via `Docker Compose`
 - **Environment management** via `.env` files
-- **Reverse proxy** configuration via Nginx
+- **Reverse proxy** configuration via `Nginx`
 - **Deployment scripts** in `/scripts`
 
 Application logic belongs to the submodules — not here.
