@@ -1,0 +1,79 @@
+#
+# Development-only Docker Compose file for the Dostra CRM workspace.
+#
+# This setup is intentionally optimized for local development:
+# - runs the frontend and backend directly from their submodule Dockerfiles
+# - mounts the source trees for fast edit-and-refresh workflows
+# - exposes the Vite dev server and Laravel dev server on host ports
+# - passes the frontend API base URL explicitly so the browser can reach the backend
+# - keeps the stack simple by using the Laravel SQLite development setup
+#
+# For production, use separate images and a production-specific Compose file or deployment pipeline.
+
+services:
+  api:
+    # Laravel API service.
+    # - builds from the backend submodule's development Dockerfile
+    # - serves the app on port 8000
+    # - runs with the local source mounted for fast iteration
+    build:
+      context: ./dostra-api
+      dockerfile: Dockerfile
+    container_name: dostra-api-dev
+    working_dir: /var/www/html
+    ports:
+      - "${DOSTRA_API_PORT:-8000}:8000"
+    env_file:
+      # Load the Laravel app configuration from the backend env file.
+      - ./dostra-api/.env
+    environment:
+      # Override a few values explicitly so the container always uses the Dockerized dev wiring.
+      APP_ENV: ${DOSTRA_API_APP_ENV:-local}
+      APP_DEBUG: ${DOSTRA_API_APP_DEBUG:-true}
+      APP_URL: ${DOSTRA_API_APP_URL:-http://127.0.0.1:8000}
+      DB_CONNECTION: ${DOSTRA_API_DB_CONNECTION:-sqlite}
+      DB_DATABASE: ${DOSTRA_API_DB_DATABASE:-database/database.sqlite}
+    volumes:
+      # Mount the backend source so PHP code, config, and routes update immediately.
+      - ./dostra-api:/var/www/html
+      # Keep Composer dependencies inside a Docker-managed volume so the bind mount does not
+      # replace them with host-specific contents.
+      - dostra_api_vendor:/var/www/html/vendor
+    restart: unless-stopped
+
+  web:
+    # React + Vite frontend service.
+    # - builds from the frontend submodule's development Dockerfile
+    # - serves the Vite dev server on port 5173
+    # - mounts the local source for instant frontend refresh
+    build:
+      context: ./dostra-web
+      dockerfile: Dockerfile
+    container_name: dostra-web-dev
+    working_dir: /app
+    depends_on:
+      - api
+    ports:
+      - "${DOSTRA_WEB_PORT:-5173}:5173"
+    env_file:
+      # Load frontend env files in the same order Vite commonly expects:
+      # base defaults first, then local overrides for a developer machine.
+      - ./dostra-web/.env
+      - ./dostra-web/.env.local
+    environment:
+      # Ensure Docker Compose also provides the public frontend API base URL explicitly.
+      # Because the browser runs on the host machine, use the host-mapped backend URL rather than the
+      # internal Docker service name.
+      VITE_API_BASE_URL: ${DOSTRA_WEB_VITE_API_BASE_URL:-http://127.0.0.1:8000/api}
+    volumes:
+      # Mount the frontend source so component and style changes hot-reload in the browser.
+      - ./dostra-web:/app
+      # Keep Node dependencies inside a Docker-managed volume so Linux-native bindings are not
+      # replaced by the host machine's node_modules directory.
+      - dostra_web_node_modules:/app/node_modules
+    restart: unless-stopped
+
+volumes:
+  # Docker-managed dependency volumes prevent host/container platform mismatches.
+  dostra_api_vendor:
+  dostra_web_node_modules:
