@@ -88,9 +88,9 @@ cd dostra-deploy
 ```
 
 Already cloned without submodules?
-> ```bash
-> git submodule update --init --recursive
-> ```
+```bash
+git submodule update --init --recursive
+```
 
 ### 2. Configure environment
 
@@ -103,13 +103,19 @@ Edit `.env` with your local configuration before proceeding.
 ### 3. Start the stack
 
 ```bash
-docker-compose up --build
+./scripts/deploy.sh
 ```
 
-| Service | URL |
-|---------|-----|
+| Service     | URL                   |
+|-------------|-----------------------|
 | 🌐 Frontend | http://localhost:5173 |
-| ⚙️ Backend | http://localhost:8000 |
+| ⚙️ Backend  | http://localhost:8000 |
+
+### 4. Stop the stack
+
+```bash
+./scripts/rollback.sh
+```
 
 ---
 
