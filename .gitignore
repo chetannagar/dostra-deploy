@@ -17,6 +17,7 @@ yarn-error.log*
 Thumbs.db
 
 # Editor / IDE
+.claude/
 .codex/
 .vscode/
 .idea/
