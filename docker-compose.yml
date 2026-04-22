@@ -11,7 +11,38 @@
 # For production, use separate images and a production-specific Compose file or deployment pipeline.
 
 services:
+  db:
+    # Database service for development.
+    # - uses the official Postgres image
+    # - exposes the default Postgres port on the host machine
+    image: postgres:17-alpine
+    container_name: dostra-db-dev
+    ports:
+      - "${DOSTRA_DB_PORT:-5432}:5432"
+    env_file:
+      # Load database configuration from the backend env file.
+      - ./dostra-api/.env
+    environment:
+      # Override a few values explicitly so the container always uses the Dockerized dev wiring.
+      POSTGRES_DB: ${DOSTRA_API_DB_DATABASE:-dostra_test_db}
+      POSTGRES_USER: ${DOSTRA_API_DB_USERNAME:-chetan}
+      POSTGRES_PASSWORD: ${DOSTRA_API_DB_PASSWORD:-}
+    volumes:
+      # Persist database data in a Docker-managed volume so it is not lost when the container stops.
+      - dostra_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DOSTRA_API_DB_USERNAME:-chetan} -d ${DOSTRA_API_DB_DATABASE:-dostra_test_db}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
   api:
+    # depends_on with a healthcheck ensures the Laravel API container waits for the database to be ready before starting.
+    # This prevents connection errors during startup and ensures a smoother development experience.
+    # The healthcheck is defined in the db service's Dockerfile or Compose configuration to check for database readiness.
+    depends_on:
+      db:
+        condition: service_healthy
     # Laravel API service.
     # - builds from the backend submodule's development Dockerfile
     # - serves the app on port 8000
@@ -24,15 +55,20 @@ services:
     ports:
       - "${DOSTRA_API_PORT:-8000}:8000"
     env_file:
-      # Load the Laravel app configuration from the backend env file.
+      # Load base Laravel config first, then Docker-specific overrides win.
       - ./dostra-api/.env
+      - ./dostra-api/.env.docker
     environment:
       # Override a few values explicitly so the container always uses the Dockerized dev wiring.
       APP_ENV: ${DOSTRA_API_APP_ENV:-local}
       APP_DEBUG: ${DOSTRA_API_APP_DEBUG:-true}
       APP_URL: ${DOSTRA_API_APP_URL:-http://127.0.0.1:8000}
-      DB_CONNECTION: ${DOSTRA_API_DB_CONNECTION:-sqlite}
-      DB_DATABASE: ${DOSTRA_API_DB_DATABASE:-database/database.sqlite}
+      DB_CONNECTION: ${DOSTRA_API_DB_CONNECTION:-pgsql}
+      DB_HOST: ${DOSTRA_API_DB_HOST:-db}
+      DB_PORT: ${DOSTRA_API_DB_PORT:-5432}
+      DB_DATABASE: ${DOSTRA_API_DB_DATABASE:-dostra_test_db}
+      DB_USERNAME: ${DOSTRA_API_DB_USERNAME:-chetan}
+      DB_PASSWORD: ${DOSTRA_API_DB_PASSWORD:-}
     volumes:
       # Mount the backend source so PHP code, config, and routes update immediately.
       - ./dostra-api:/var/www/html
@@ -75,5 +111,6 @@ services:
 
 volumes:
   # Docker-managed dependency volumes prevent host/container platform mismatches.
+  dostra_postgres_data:
   dostra_api_vendor:
   dostra_web_node_modules:

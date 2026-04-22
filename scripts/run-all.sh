@@ -40,6 +40,7 @@ trap cleanup SIGINT SIGTERM
 echo "Starting Laravel API..."
 (
   cd "$ROOT_DIR/dostra-api"
+  php artisan config:clear
   composer run dev
 ) &
 API_PID=$!
