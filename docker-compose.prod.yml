@@ -1,0 +1,98 @@
+# Production Docker Compose file for the Dostra CRM stack.
+#
+# Key differences from docker-compose.yml (dev):
+# - no bind mounts — source is baked into the images at build time
+# - uses Dockerfile.prod for both api and web
+# - Nginx reverse proxy sits in front of everything (only port 80 is exposed)
+# - PHP-FPM serves the API — not php artisan serve
+# - no vendor or node_modules volumes needed (no bind mounts)
+# - all secrets come from environment variables, never hardcoded here
+#
+# Usage:
+#   docker compose -f docker-compose.prod.yml up -d --build
+#
+# Required env vars (set in your CI/CD secrets or a .env.prod file):
+#   POSTGRES_DB, POSTGRES_USER, POSTGRES_PASSWORD
+#   APP_KEY, APP_URL
+#   DB_HOST=db, DB_PORT=5432, DB_DATABASE, DB_USERNAME, DB_PASSWORD
+
+services:
+  db:
+    image: postgres:17-alpine
+    container_name: dostra-db-prod
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB}
+      POSTGRES_USER: ${POSTGRES_USER}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+    volumes:
+      # Named volume persists data across container restarts and re-deploys.
+      - dostra_postgres_data_prod:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+    restart: unless-stopped
+    # db is internal — no ports exposed to the host.
+
+  api:
+    build:
+      context: ./dostra-api
+      dockerfile: Dockerfile.prod
+    container_name: dostra-api-prod
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      APP_ENV: production
+      APP_DEBUG: false
+      APP_KEY: ${APP_KEY}
+      APP_URL: ${APP_URL}
+      DB_CONNECTION: pgsql
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_DATABASE: ${POSTGRES_DB}
+      DB_USERNAME: ${POSTGRES_USER}
+      DB_PASSWORD: ${POSTGRES_PASSWORD}
+      SESSION_DRIVER: database
+      CACHE_STORE: database
+      QUEUE_CONNECTION: database
+      LOG_CHANNEL: stderr
+      LOG_LEVEL: error
+    restart: unless-stopped
+    # api is internal — Nginx talks to it via FastCGI, no host port needed.
+
+  web:
+    build:
+      context: ./dostra-web
+      dockerfile: Dockerfile.prod
+      args:
+        # Vite bakes this URL into the JS bundle at build time.
+        # Must point to the public-facing API URL (same domain, /api prefix).
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL}
+    container_name: dostra-web-prod
+    depends_on:
+      - api
+    restart: unless-stopped
+    # web is internal — Nginx proxies to it, no host port needed.
+
+  nginx:
+    image: nginx:1.27-alpine
+    container_name: dostra-nginx-prod
+    depends_on:
+      - api
+      - web
+    ports:
+      # Only Nginx is exposed to the outside world.
+      - "80:80"
+      # Uncomment when SSL is configured:
+      # - "443:443"
+    volumes:
+      # Mount the reverse proxy config.
+      - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf:ro
+      # Uncomment when SSL certificates are in place:
+      # - ./nginx/certs:/etc/nginx/certs:ro
+    restart: unless-stopped
+
+volumes:
+  dostra_postgres_data_prod:
