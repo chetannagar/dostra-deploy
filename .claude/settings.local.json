@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(git -C /Users/chetan/dev/projects/dostra-deploy log --oneline -3)",
+      "Bash(git -C /Users/chetan/dev/projects/dostra-deploy submodule status)",
+      "Bash(git -C /Users/chetan/dev/projects/dostra-deploy/dostra-api log --oneline -3)",
+      "Bash(git -C /Users/chetan/dev/projects/dostra-deploy/dostra-web log --oneline -3)",
+      "Bash(git -C /Users/chetan/dev/projects/dostra-deploy/dostra-api log origin/master --oneline -3)",
+      "Bash(git -C /Users/chetan/dev/projects/dostra-deploy/dostra-web log origin/master --oneline -3)",
+      "Bash(git -C /Users/chetan/dev/projects/dostra-deploy log origin/master --oneline -3)",
+      "Bash(git -C /Users/chetan/dev/projects/dostra-deploy branch -a)"
+    ]
+  }
+}
