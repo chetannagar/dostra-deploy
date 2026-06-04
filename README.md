@@ -42,8 +42,8 @@ This repository is the **single source of truth** for running the Dostra CRM sys
 
 ```
 dostra-deploy/
-├── 🌐  dostra-web/          # Frontend  — React · Vite · TypeScript · Tailwind
 ├── ⚙️  dostra-api/          # Backend   — Laravel (PHP)
+├── 🌐  dostra-web/          # Frontend  — React · Vite · TypeScript · Tailwind
 ├── 🔀  nginx/               # Reverse proxy configuration
 ├── 🛠  scripts/             # Deployment & utility scripts
 ├── .dockerignore
@@ -51,7 +51,6 @@ dostra-deploy/
 ├── .gitignore
 ├── .gitmodules
 ├── docker-compose.yml
-├── Dockerfile
 └── README.md
 ```
 
@@ -61,8 +60,8 @@ This repository uses Git submodules to independently version each service:
 
 | Submodule | Role | Stack |
 |-----------|------|-------|
-| [`dostra-web`](../dostra-web) | CRM dashboard & UI | React, Vite, TypeScript, Tailwind |
 | [`dostra-api`](../dostra-api) | Lead ingestion & REST API | Laravel, PHP |
+| [`dostra-web`](../dostra-web) | CRM dashboard & UI | React, Vite, TypeScript, Tailwind |
 
 ---
 
