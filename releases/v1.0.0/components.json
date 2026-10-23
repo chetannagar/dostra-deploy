@@ -1,0 +1,22 @@
+{
+  "version": "1.0.0",
+  "released": "2026-10-24",
+  "api": {
+    "commit": "524143d176f9c2242212fbe35104419687591379",
+    "branch": "master",
+    "describe": "524143d",
+    "subject": "Update Laravel Boost guidelines and skills"
+  },
+  "web": {
+    "commit": "13657c49b259a1811a19fb1baaa35a52f6ab3de2",
+    "branch": "master",
+    "describe": "13657c4",
+    "subject": "Merge branch 'dev'"
+  },
+  "runtime": {
+    "php": "8.5.12",
+    "node": "node:22-bookworm-slim",
+    "postgres": "postgres:17-alpine",
+    "nginx": "nginx:1.27-alpine"
+  }
+}
