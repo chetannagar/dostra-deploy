@@ -11,7 +11,7 @@ Internet
    │
    ▼
 Nginx (port 80/443)          ← only service exposed to the outside
-   ├── /api/*  ──────────►  api container  (PHP-FPM :9000)  ──►  PostgreSQL
+   ├── /api /sanctum /admin /livewire-* /up  ──►  api container (PHP-FPM :9000)  ──►  PostgreSQL
    └── /*      ──────────►  web container  (Nginx :80, static files)
 ```
 
@@ -82,7 +82,7 @@ VITE_API_BASE_URL=https://yourdomain.com/api
 > **APP_KEY** — if you don't have PHP locally, generate one with:
 
 ```bash
-docker run --rm php:8.4-cli php -r "echo 'base64:' . base64_encode(random_bytes(32)) . PHP_EOL;"
+docker run --rm php:8.5.12-cli php -r "echo 'base64:' . base64_encode(random_bytes(32)) . PHP_EOL;"
 ```
 
 ### 4. Run the deploy script
@@ -172,6 +172,9 @@ If a load balancer (AWS ALB, Cloudflare, etc.) terminates SSL before traffic rea
 ## Useful Commands
 
 ```bash
+# Tip: add --env-file .env.prod to any compose command below to avoid
+# "variable is not set" warnings.
+
 # View running containers
 docker compose -f docker-compose.prod.yml ps
 

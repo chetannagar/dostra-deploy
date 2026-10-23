@@ -3,7 +3,8 @@
 # Key differences from docker-compose.yml (dev):
 # - no bind mounts — source is baked into the images at build time
 # - uses Dockerfile.prod for both api and web
-# - Nginx reverse proxy sits in front of everything (only port 80 is exposed)
+# - Nginx reverse proxy sits in front of everything (only port 80 is exposed);
+#   its image also carries Filament's static assets, copied from the api image
 # - PHP-FPM serves the API — not php artisan serve
 # - no vendor or node_modules volumes needed (no bind mounts)
 # - all secrets come from environment variables, never hardcoded here
@@ -44,6 +45,7 @@ services:
       db:
         condition: service_healthy
     environment:
+      APP_NAME: Dostra CRM
       APP_ENV: production
       APP_DEBUG: false
       APP_KEY: ${APP_KEY}
@@ -55,10 +57,23 @@ services:
       DB_USERNAME: ${POSTGRES_USER}
       DB_PASSWORD: ${POSTGRES_PASSWORD}
       SESSION_DRIVER: database
-      CACHE_STORE: database
+      # "file", not "database": entrypoint.prod.sh runs `migrate --isolated`, which
+      # locks via the cache store. With "database" the cache_locks table doesn't
+      # exist yet on the first migrate of an empty DB, so the first deploy fails.
+      # File locks are per-container, which is fine for a single api container.
+      # If you ever run more than one api replica, switch to redis (shared lock).
+      CACHE_STORE: file
       QUEUE_CONNECTION: database
       LOG_CHANNEL: stderr
       LOG_LEVEL: error
+    healthcheck:
+      # The entrypoint runs optimize + migrate before starting PHP-FPM, so
+      # port 9000 only opens once the app is ready. Healthy = migrated + serving.
+      test: ["CMD", "php", "-r", "exit(@fsockopen('127.0.0.1', 9000) ? 0 : 1);"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
+      start_period: 60s
     restart: unless-stopped
     # api is internal — Nginx talks to it via FastCGI, no host port needed.
 
@@ -72,16 +87,36 @@ services:
         VITE_API_BASE_URL: ${VITE_API_BASE_URL}
     container_name: dostra-web-prod
     depends_on:
-      - api
+      api:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
     restart: unless-stopped
     # web is internal — Nginx proxies to it, no host port needed.
 
   nginx:
-    image: nginx:1.27-alpine
+    build:
+      context: ./nginx
+      dockerfile: Dockerfile
+      additional_contexts:
+        # Lets nginx/Dockerfile copy Filament's static assets out of the api image.
+        api: service:api
     container_name: dostra-nginx-prod
     depends_on:
-      - api
-      - web
+      api:
+        condition: service_healthy
+      web:
+        condition: service_healthy
+    healthcheck:
+      # Goes through the reverse proxy to Laravel's /up route, so this checks
+      # the whole Nginx -> PHP-FPM -> app path.
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1/up"]
+      interval: 5s
+      timeout: 5s
+      retries: 10
     ports:
       # Only Nginx is exposed to the outside world.
       - "80:80"

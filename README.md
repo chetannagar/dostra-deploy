@@ -46,7 +46,6 @@ dostra-deploy/
 ├── 🌐  dostra-web/          # Frontend  — React · Vite · TypeScript · Tailwind
 ├── 🔀  nginx/               # Reverse proxy configuration
 ├── 🛠  scripts/             # Deployment & utility scripts
-├── .dockerignore
 ├── .env.example
 ├── .gitignore
 ├── .gitmodules
